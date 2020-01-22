@@ -105,11 +105,13 @@ class SmartSplines(k.layers.Layer):
 class MVNRegularization(k.layers.Layer):
     """
     Penalises models for deviating from a mu=0 sd=1 no covariance between features.
+
+    This is done by minimizing the model's mean negative log-likelihood
     """
 
-    def __init__(self, m=1.0, **kwargs):
+    def __init__(self, weight=1.0, **kwargs):
         super().__init__(**kwargs)
-        self.m = m
+        self.weight = weight
         self.mvn = None
 
     def build(self, input_shape):
@@ -123,7 +125,7 @@ class MVNRegularization(k.layers.Layer):
         super().build(input_shape)
 
     def call(self, inputs, **kwargs):
-        self.add_loss(self.m * -K.sum(self.mvn.log_prob(inputs)))
+        self.add_loss(self.weight * -K.mean(self.mvn.log_prob(inputs)))
         return inputs
 
     def compute_output_shape(self, input_shape):
@@ -137,6 +139,6 @@ class MVNRegularization(k.layers.Layer):
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'm': self.m,
+            'm': self.weight,
             'mvn': self.mvn
         })
