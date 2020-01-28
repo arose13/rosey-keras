@@ -100,8 +100,8 @@ class SmartSplines(k.layers.Layer):
 
 
 class RBFLayer(k.layers.Layer):
-    def __init__(self, output_dim, **kwargs):
-        self.output_dim = output_dim
+    def __init__(self, n_components, **kwargs):
+        self.n_components = n_components
         self.centers, self.betas = 2*[None]
         super().__init__(**kwargs)
 
@@ -111,13 +111,13 @@ class RBFLayer(k.layers.Layer):
 
         self.centers = self.add_weight(
             name='centers',
-            shape=(self.output_dim, p),
+            shape=(self.n_components, p),
             initializer=k.initializers.he_uniform(),
             trainable=True
         )
         self.betas = self.add_weight(
             name='betas',
-            shape=(self.output_dim,),
+            shape=(self.n_components,),
             initializer=k.initializers.constant(1.0),
             trainable=True
         )
@@ -135,12 +135,12 @@ class RBFLayer(k.layers.Layer):
         return K.exp(-self.betas * K.sum(h**2, axis=1))
 
     def compute_output_shape(self, input_shape):
-        return input_shape[0], self.output_dim
+        return input_shape[0], self.n_components
 
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'output_dim': self.output_dim
+            'n_components': self.n_components
         })
         return config
 
