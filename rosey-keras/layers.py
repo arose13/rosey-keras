@@ -64,7 +64,7 @@ class SmartSplines(k.layers.Layer):
         RBF activation function for each dimension p of x
         effectively transforming X to a new X
 
-        \varphi_{jk}(x_j) = m_{jk} * exp[ -\beta_{jk} * ||x_j - \mu_{jk}||^2 ]
+        φ_{jk}(x_j) = m_{jk} * exp[ -β_{jk} * ||x_j - μ_{jk}||^2 ]
         """
         # Transform inputs from (n, p) -> (n, p, n_bases)
         x = K.tile(
@@ -99,6 +99,52 @@ class SmartSplines(k.layers.Layer):
         return config
 
 
+class RBFLayer(k.layers.Layer):
+    def __init__(self, output_dim, **kwargs):
+        self.output_dim = output_dim
+        self.centers, self.betas = 2*[None]
+        super().__init__(**kwargs)
+
+    def build(self, input_shape):
+        super().build(input_shape)
+        p = input_shape[1]
+
+        self.centers = self.add_weight(
+            name='centers',
+            shape=(self.output_dim, p),
+            initializer=k.initializers.he_uniform(),
+            trainable=True
+        )
+        self.betas = self.add_weight(
+            name='betas',
+            shape=(self.output_dim,),
+            initializer=k.initializers.constant(1.0),
+            trainable=True
+        )
+
+    def call(self, inputs, **kwargs):
+        """
+        RBF activation function
+        φ = exp[-β * ||x-μ||^2]
+        :param inputs:
+        :param kwargs:
+        :return:
+        """
+        centers = K.expand_dims(self.centers)
+        h = K.transpose(centers - K.transpose(inputs))
+        return K.exp(-self.betas * K.sum(h**2, axis=1))
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0], self.output_dim
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'output_dim': self.output_dim
+        })
+        return config
+
+
 #######################################################################################################################
 # Regularization layers
 #######################################################################################################################
@@ -106,12 +152,13 @@ class MVNRegularization(k.layers.Layer):
     """
     Penalises models for deviating from a mu=0 sd=1 no covariance between features.
 
-    This is done by minimizing the model's mean negative log-likelihood
+    This is done by minimizing the model's mean negative log-likelihood or mean KL divergence
     """
 
-    def __init__(self, weight=1.0, **kwargs):
+    def __init__(self, weight=1.0, use='kl', **kwargs):
         super().__init__(**kwargs)
         self.weight = weight
+        self.use = use
         self.mvn = None
 
     def build(self, input_shape):
@@ -140,5 +187,6 @@ class MVNRegularization(k.layers.Layer):
         config = super().get_config().copy()
         config.update({
             'm': self.weight,
+            'use': self.use,
             'mvn': self.mvn
         })
