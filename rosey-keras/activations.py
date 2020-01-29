@@ -16,3 +16,12 @@ def probit(x):
     """
     from tensorflow_probability import distributions
     return distributions.Normal(0, 1).cdf(x)
+
+
+def swish(x):
+    """
+    Google brain team new activation.
+    Their experiments show that Swish tends to work better than ReLU on
+    deeper models across a number of challenging data sets
+    """
+    return x * k.activations.sigmoid(x)
