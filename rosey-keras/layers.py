@@ -145,6 +145,69 @@ class RBFLayer(k.layers.Layer):
         return config
 
 
+class ConstantLayer(k.layers.Layer):
+    """
+    Extremely simple layer that just learns some constant value
+
+    Example
+    ```python
+    import numpy as np
+    from scipy import stats
+
+    n = 10000
+    x = stats.norm().rvs((n, 1000))
+    y = stats.norm(100, 15).rvs(n)
+
+    input_layer = k.layers.Input(shape=(x.shape[1],))
+    output_layer = ConstantLayer(name='mean')(input_layer)  # Input literally does nothing at all
+
+    model = k.models.Model(input_layer, output_layer)
+    print(model.summary())
+
+    model.compile(optimizer=k.optimizers.SGD(0.01), loss='mse')
+    model.fit(
+        x, y,
+        validation_split=0.1,
+        batch_size=1024, epochs=1000,
+        callbacks=[
+            k.callbacks.EarlyStopping(patience=10, verbose=True),
+            k.callbacks.ReduceLROnPlateau(factor=0.5, patience=5, verbose=True),
+            k.callbacks.TerminateOnNaN(),
+        ]
+    )
+    ```
+    """
+    def __init__(self, regularizer=None, constraints=None, **kwargs):
+        super().__init__(**kwargs)
+        self.regularizer = k.regularizers.get(regularizer)
+        self.constraints = k.constraints.get(constraints)
+        self.constant = None
+
+    def build(self, input_shape):
+        super().build(input_shape)
+
+        self.constant = self.add_weight(
+            name='constant',
+            shape=(1,),
+            initializer=k.initializers.he_normal(),
+            regularizer=self.regularizer,
+            constraint=self.constraints,
+            trainable=True
+        )
+
+    def call(self, inputs, **kwargs):
+        return self.constant * K.ones_like(inputs)[:, :1]
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0], 1
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'regularizer': k.regularizers.serialize(self.regularizer),
+            'constraints': k.constraints.serialize(self.constraints)
+        })
+
 #######################################################################################################################
 # Regularization layers
 #######################################################################################################################
