@@ -1,5 +1,69 @@
+import tensorflow as tf
 import tensorflow.keras as k
 import tensorflow.keras.backend as K
+
+
+def _diff(x):
+    return x[1:] - x[:-1]
+
+
+def _wasserstein_distance(a, b):
+    """
+    Distance function
+
+    :param a: data points from distribution A
+    :param b: data points from distribution B
+    :return:
+    """
+    # Compute the cdf distance
+    a_sorter = tf.argsort(a)
+    b_sorter = tf.argsort(b)
+
+    # Pooled value from both a and b
+    all_values = K.concatenate([a, b])
+    all_values = tf.sort(all_values)
+
+    # Compute the difference between the sorted pooled values
+    deltas = _diff(all_values)
+
+    # Get the positions of the values of a and b between the 2 distributions
+    a_cdf_indices = tf.searchsorted(
+        tf.gather(a, a_sorter),
+        all_values[:-1],
+        side='right'
+    )
+    b_cdf_indices = tf.searchsorted(
+        tf.gather(b, b_sorter),
+        all_values[:-1],
+        side='right'
+    )
+
+    # Calculate CDF
+    a_cdf = tf.cast(a_cdf_indices / tf.size(a), 'float')
+    b_cdf = tf.cast(b_cdf_indices / tf.size(b), 'float')
+
+    # Wasserstein distance
+    return K.sum(
+        tf.multiply(
+            K.abs(a_cdf - b_cdf),
+            deltas
+        )
+    )
+
+
+def wasserstein_loss(a_and_b, label):
+    """
+    This implements the truest Wasserstein distance and therefore no need to worry about how a or b is encoded
+    :param a_and_b: all data
+    :param label: binary labels about something is from distribution b or not
+    :return: Wasserstein metric
+    """
+    bool_labels = K.cast(label, 'bool')
+
+    a = tf.boolean_mask(a_and_b, ~bool_labels)
+    b = tf.boolean_mask(a_and_b, bool_labels)
+
+    return _wasserstein_distance(a, b)
 
 
 def huber_loss(y_true, y_pred, delta=1):
@@ -31,3 +95,8 @@ def log_cosh_loss(y_true, y_pred, delta=1):
     def _cosh(x):
         return (K.exp(x) + K.exp(-x)) / 2
     return K.mean(K.log(_cosh(y_pred - y_true)), axis=-1)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
