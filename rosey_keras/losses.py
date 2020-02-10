@@ -9,7 +9,7 @@ def _diff(x):
 
 def _wasserstein_distance(a, b):
     """
-    Distance function
+    Wasserstein distance function
 
     :param a: data points from distribution A
     :param b: data points from distribution B
@@ -54,6 +54,7 @@ def _wasserstein_distance(a, b):
 def wasserstein_loss(a_and_b, label):
     """
     This implements the truest Wasserstein distance and therefore no need to worry about how a or b is encoded
+
     :param a_and_b: all data
     :param label: binary labels about something is from distribution b or not
     :return: Wasserstein metric
@@ -83,7 +84,7 @@ def huber_loss(y_true, y_pred, delta=1):
 def pseudo_huber_loss(y_true, y_pred, delta=1):
     """
     a = y - f(x)
-    (delta ** 2) * (np.sqrt(1 + (a / delta) ** 2) - 1)
+    (delta^2) * (np.sqrt(1 + (a / delta)^2) - 1)
     """
     return K.mean((delta ** 2) * (K.sqrt(1 + K.pow((y_true - y_pred) / delta, 2)) - 1))
 
@@ -95,8 +96,3 @@ def log_cosh_loss(y_true, y_pred, delta=1):
     def _cosh(x):
         return (K.exp(x) + K.exp(-x)) / 2
     return K.mean(K.log(_cosh(y_pred - y_true)), axis=-1)
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
