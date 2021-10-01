@@ -96,3 +96,21 @@ def log_cosh_loss(y_true, y_pred, delta=1):
     def _cosh(x):
         return (K.exp(x) + K.exp(-x)) / 2
     return K.mean(K.log(_cosh(y_pred - y_true)), axis=-1)
+
+
+def get_quantile_loss(quantile):
+    """
+    q * residual [if residual > 0]
+    (q-1) * residual [if residual < 0]
+
+    Unlike most loss functions this one needs to be called with the desired quantile to yield the loss function
+    """
+    def quantile_loss(y_true, quantile_hat):
+        residual = y_true - quantile_hat
+        tilt = K.maximum(
+            quantile*residual,
+            (quantile - 1) * residual
+        )
+        return K.mean(tilt, axis=-1)
+
+    return quantile_loss

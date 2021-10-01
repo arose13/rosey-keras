@@ -1,1 +1,1 @@
-__version__ = 0.20200131  # Major.YYYYMMDD
+__version__ = '1.20210930'  # Major.YYYYMMDD
