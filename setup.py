@@ -21,8 +21,6 @@ dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startsw
 setup(
     name='rosey-keras',
     version=__version__,
-    description='',
-    long_description=long_description,
     url='https://github.com/arose13/rosey-keras',
     license='BSD',
     classifiers=[
