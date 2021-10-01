@@ -177,8 +177,9 @@ class ConstantLayer(k.layers.Layer):
     )
     ```
     """
-    def __init__(self, regularizer=None, constraints=None, **kwargs):
+    def __init__(self, n_constants=1, regularizer=None, constraints=None, **kwargs):
         super().__init__(**kwargs)
+        self.n_constants = n_constants
         self.regularizer = k.regularizers.get(regularizer)
         self.constraints = k.constraints.get(constraints)
         self.constant = None
@@ -188,7 +189,7 @@ class ConstantLayer(k.layers.Layer):
 
         self.constant = self.add_weight(
             name='constant',
-            shape=(1,),
+            shape=(self.n_constants,),
             initializer=k.initializers.he_normal(),
             regularizer=self.regularizer,
             constraint=self.constraints,
@@ -208,6 +209,7 @@ class ConstantLayer(k.layers.Layer):
             'constraints': k.constraints.serialize(self.constraints)
         })
 
+
 #######################################################################################################################
 # Regularization layers
 #######################################################################################################################
@@ -217,7 +219,6 @@ class MVNRegularization(k.layers.Layer):
 
     This is done by minimizing the model's mean negative log-likelihood or mean KL divergence
     """
-
     def __init__(self, weight=1.0, use='kl', **kwargs):
         super().__init__(**kwargs)
         self.weight = weight
